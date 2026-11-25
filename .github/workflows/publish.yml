@@ -1,0 +1,62 @@
+name: Publish to PyPI
+
+# 태그 v<version> 을 푸시하면 빌드해서 PyPI 에 올린다 (Trusted Publishing, 토큰 없음).
+# pypi.org 쪽 설정: owner=younghwan91, repo=krx-fundamentals-client,
+# workflow=publish.yml, environment=release.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        run: |
+          pip install -e ".[dev]"
+          pytest tests/ -q
+
+      - name: Check tag matches pyproject version
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "tag ${GITHUB_REF_NAME} != pyproject version v${version}" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          pip install build twine
+          python -m build
+          twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
