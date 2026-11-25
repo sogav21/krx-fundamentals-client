@@ -254,6 +254,7 @@ OpenDART를 직접 부를 때, pykrx·FinanceDataReader를 쓸 때와 무엇이 
 
 ## 기여 및 문의
 
+- 기여 방법(개발 환경·테스트·커밋 규칙)은 [CONTRIBUTING.md](CONTRIBUTING.md), 처음이라면 [good first issue](https://github.com/younghwan91/krx-fundamentals-client/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)부터 보세요.
 - 버그 제보, 질문, 기능 제안은 [GitHub Issues](https://github.com/younghwan91/krx-fundamentals-client/issues)에 남겨주세요.
 - 만든 사람: **채영환 (Younghwan Chae)** · [GitHub @younghwan91](https://github.com/younghwan91) · [LinkedIn](https://www.linkedin.com/in/younghwan-chae/)
 

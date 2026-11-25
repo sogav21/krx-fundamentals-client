@@ -1,0 +1,32 @@
+# krx-fundamentals-client
+
+> Async Python client that collects Korean company fundamentals (financial statements, investment ratios such as PER/PBR/EPS/dividend yield, dividends, shares outstanding, major shareholders, executives) from DART OpenAPI, Naver Finance and KRX and returns them as Pydantic models. A library, not a server: no cache, scheduler or storage; every call hits the source. Includes pure `screen_stocks` / `rank_stocks` functions.
+
+Install `pip install git+https://github.com/younghwan91/krx-fundamentals-client` (not on PyPI yet), Python 3.11+, import name `krx_fundamentals_client`.
+
+Rules for writing code against this library:
+
+- Everything is async: `await DartScraper(api_key=...).fetch_financials("005930", 2024)`. In a script wrap it in `asyncio.run(main())`.
+- The library does not read environment variables. Pass the key yourself: `DartScraper(api_key=...)` (free key from https://opendart.fss.or.kr; `examples/` read `DART_API_KEY`). Never hard-code or print keys. `NaverScraper()` needs no key.
+- `DartScraper`: `fetch_company`, `fetch_financials(ticker, year)` (annual report, consolidated first, falls back to separate), `fetch_financials_batch` (up to 100 tickers per call), `fetch_dividends`, shares outstanding, shareholders, executives.
+- `NaverScraper().fetch_stock_info("005930")` returns one `InvestmentRatio` (price, market cap, PER, PBR, EPS, BPS, dividend yield). ROE and debt ratio are not provided and stay `None`.
+- **`KrxScraper` is blocked** (KRX requires login since 2026-08) and returns an empty list without raising. Never read an empty result as "no such stock"; use `NaverScraper` for per-stock ratios.
+- DART daily quota exhaustion raises `DartQuotaExceededError`, which is distinct from an empty result. Do not run bulk calls against a shared key without asking.
+- `screen_stocks` and `rank_stocks(RankingMetric)` take `list[InvestmentRatio]` and filter or sort in place; they do no I/O.
+- Stock codes are 6 characters (`005930`). Models are plain Pydantic: `Company`, `FinancialStatement`, `InvestmentRatio`, `Dividend`, `SharesOutstanding`, `Shareholder`, `Executive`.
+
+## Docs
+
+- [README (한국어)](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/README.md): quick start, usage examples per scraper, caveats
+- [README (English)](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/README.en.md): the same, in English
+- [Usage guide](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/docs/guide.md): batch queries, key rotation, screening and ranking, development commands
+- [Comparison with other approaches](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/docs/comparison.md): direct OpenDART calls, pykrx and FinanceDataReader, measured 2026-11
+- [Architecture](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/docs/architecture.md): scraper structure, ranking and screening, DART call order
+- [Examples](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/examples/README.md): `basic_usage.py`, `screening.py`, `portfolio_analysis.py`
+
+## Optional
+
+- [KRX block investigation](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/docs/krx-blocked.md): why `KrxScraper` returns empty, with code trace
+- [CONTRIBUTING](https://raw.githubusercontent.com/younghwan91/krx-fundamentals-client/main/CONTRIBUTING.md): dev setup, tests, commit convention
+- [Sibling: krx-news-client](https://github.com/younghwan91/krx-news-client): DART filings and Toss news in one schema
+- [Sibling: fin-checkup](https://github.com/younghwan91/fin-checkup): 17 financial indicators as traffic lights, formulas and thresholds published
