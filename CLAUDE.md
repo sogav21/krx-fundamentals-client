@@ -30,7 +30,7 @@ uv lock --check                   # uv.lock 은 커밋한다
 
 ## 소비자와 배포
 
-- PyPI 에 **없다**(publish 워크플로도 없음). 유일한 소비자 quant-airflow 가 Docker 이미지에서
+- PyPI 에 아직 **없다**. `v*` 태그를 푸시하면 `.github/workflows/publish.yml` 이 Trusted Publishing 으로 올린다(태그 = pyproject 버전이어야 통과). 유일한 소비자 quant-airflow 가 Docker 이미지에서
   `krx-fundamentals-client @ git+...@main` 으로 받는다 — **main 에 머지한 것이 다음 이미지 재빌드 때 그대로 들어간다.**
   quant-airflow `collectors/dart_earnings.py`·`dart_shares.py`·`dart_filing_dates.py`·`naver_consensus.py` 가 쓰는 공개 API
   (`DartScraper`·`DartQuotaExceededError`·`FinancialStatement`·`ReportType`·`NaverConsensusScraper`)의 시그니처·필드를 바꾸면 그쪽을 같이 확인한다.

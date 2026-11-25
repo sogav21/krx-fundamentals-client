@@ -15,9 +15,20 @@ Install with one pip line; no server, cache or scheduler — each call queries t
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/younghwan91/krx-fundamentals-client)](LICENSE)
 
-[Guide (KO)](docs/guide.md) · [Architecture (KO)](docs/architecture.md) · [Examples](examples/) · [한국어](README.md)
+[Guide (KO)](docs/guide.md) · [Comparison (KO)](docs/comparison.md) · [Architecture (KO)](docs/architecture.md) · [Examples](examples/) · [한국어](README.md)
 
 </div>
+
+Three lines, no API key: Samsung Electronics' PER, PBR, EPS, dividend yield and more.
+
+```python
+# pip install git+https://github.com/younghwan91/krx-fundamentals-client
+import asyncio
+from krx_fundamentals_client import NaverScraper
+print(asyncio.run(NaverScraper().fetch_stock_info("005930")))
+```
+
+More verified snippets (batch statements and debt ratio, screening, dividend history, analyst consensus, point-in-time share counts) are in the [Korean README](README.md#사용-예).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
@@ -86,9 +97,18 @@ Running this prints the company name, CEO, and annual revenue and operating inco
 | Doc | What's inside |
 |---|---|
 | [docs/guide.md](docs/guide.md) | Batch calls, key rotation, screening/ranking, structure diagram, dev commands (Korean) |
+| [docs/comparison.md](docs/comparison.md) | Versus calling OpenDART directly, pykrx and FinanceDataReader, measured 2026-11 (Korean) |
 | [docs/architecture.md](docs/architecture.md) | Scraper structure, ranking/screening, DART call order (Korean) |
 | [docs/krx-blocked.md](docs/krx-blocked.md) | Code walkthrough of the KRX block (Korean) |
 | [`examples/`](examples/) | Basic usage, screening, portfolio examples |
+
+## Related projects
+
+| Repo | What it is |
+|---|---|
+| [fin-checkup](https://github.com/younghwan91/fin-checkup) | The same DART statements as a site: 17 metrics as traffic lights, no code needed ([open it](https://younghwan91.github.io/fin-checkup/)). |
+| [krx-news-client](https://github.com/younghwan91/krx-news-client) | DART filings and Toss Securities news in one schema, as a Python client. |
+| [kiwoom-client](https://github.com/younghwan91/kiwoom-client) | Kiwoom REST API client for quotes and orders; pair it with this library for fundamentals. |
 
 ## Contributing & Support
 
