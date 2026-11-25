@@ -15,9 +15,18 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/younghwan91/krx-fundamentals-client)](LICENSE)
 
-[사용 가이드](docs/guide.md) · [아키텍처](docs/architecture.md) · [예제](examples/) · [English](README.en.md)
+[사용 가이드](docs/guide.md) · [다른 방법과 비교](docs/comparison.md) · [아키텍처](docs/architecture.md) · [예제](examples/) · [English](README.en.md)
 
 </div>
+
+키 없이 3줄로 삼성전자 투자지표(PER·PBR·EPS·배당수익률 등)를 받아 봅니다.
+
+```python
+# pip install git+https://github.com/younghwan91/krx-fundamentals-client
+import asyncio
+from krx_fundamentals_client import NaverScraper
+print(asyncio.run(NaverScraper().fetch_stock_info("005930")))
+```
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
@@ -69,6 +78,150 @@ asyncio.run(main())
 - **스크리닝·랭킹:** `screen_stocks`와 `rank_stocks`(`RankingMetric`)는 `list[InvestmentRatio]`를 받아 그 자리에서 거르고 정렬하는 순수 함수입니다.
 - **서버 없는 경량 클라이언트:** 의존성은 `httpx`, `beautifulsoup4`, `lxml`, `pydantic` 넷뿐이며 상태와 저장은 호출자가 맡습니다.
 
+## 사용 예
+
+아래 코드는 모두 2026-11-26에 실제로 실행했고, 출력도 그때 받은 값입니다. DART 예제는 환경변수 `DART_API_KEY`에 키를 넣고 실행합니다.
+
+<details open>
+<summary><b>여러 종목 재무제표를 한 번에 받아 부채비율 계산하기</b> (DART <code>fnlttMultiAcnt</code>, 최대 100종목/호출)</summary>
+
+```python
+import asyncio, os
+from krx_fundamentals_client import DartScraper
+
+async def main():
+    dart = DartScraper(api_key=os.environ["DART_API_KEY"])
+    try:
+        fs_by_ticker = await dart.fetch_financials_batch(["005930", "000660", "035420"], year=2025)
+        for ticker, fs in fs_by_ticker.items():
+            if fs and fs.total_equity:
+                debt_ratio = fs.total_liabilities / fs.total_equity * 100
+                print(ticker, f"부채비율 {debt_ratio:.1f}%", f"매출 YoY {fs.revenue_yoy:+.1f}%")
+    finally:
+        await dart.close()
+
+asyncio.run(main())
+```
+
+```text
+005930 부채비율 29.9% 매출 YoY +10.9%
+000660 부채비율 45.9% 매출 YoY +46.8%
+035420 부채비율 41.9% 매출 YoY +12.1%
+```
+
+</details>
+
+<details>
+<summary><b>PBR·배당수익률로 거르고 PER 낮은 순으로 정렬하기</b> (네이버, 키 불필요)</summary>
+
+```python
+import asyncio
+from krx_fundamentals_client import NaverScraper, RankingMetric, rank_stocks, screen_stocks
+
+async def main():
+    naver = NaverScraper()
+    try:
+        ratios = await naver.fetch_batch(["005930", "000660", "035420", "005380", "105560", "055550"])
+    finally:
+        await naver.close()
+    cheap = screen_stocks(ratios, pbr_max=1.0, dividend_yield_min=3.0)
+    print("PBR 1 이하·배당수익률 3% 이상:", [r.name for r in cheap])
+    for r in rank_stocks(ratios, RankingMetric.PER, ascending=True)[:3]:
+        print(r.name, r.per)
+
+asyncio.run(main())
+```
+
+```text
+PBR 1 이하·배당수익률 3% 이상: ['현대차', '신한지주']
+SK하이닉스 3.88
+삼성전자 5.25
+신한지주 7.64
+```
+
+</details>
+
+<details>
+<summary><b>배당 이력 보기</b> (DART <code>alotMatter</code>)</summary>
+
+```python
+import asyncio, os
+from krx_fundamentals_client import DartScraper
+
+async def main():
+    dart = DartScraper(api_key=os.environ["DART_API_KEY"])
+    try:
+        for year in (2023, 2024, 2025):
+            d = await dart.fetch_dividends("005930", year)
+            if d:
+                print(year, f"주당배당금 {d.dividend_per_share:,.0f}원", f"배당성향 {d.payout_ratio}%")
+    finally:
+        await dart.close()
+
+asyncio.run(main())
+```
+
+```text
+2023 주당배당금 1,444원 배당성향 67.8%
+2024 주당배당금 1,446원 배당성향 29.2%
+2025 주당배당금 1,668원 배당성향 25.1%
+```
+
+</details>
+
+<details>
+<summary><b>애널리스트 컨센서스와 추정 EPS 받기</b> (네이버, 키 불필요)</summary>
+
+```python
+import asyncio
+from krx_fundamentals_client.scrapers.naver import NaverConsensusScraper
+
+async def main():
+    naver = NaverConsensusScraper()
+    try:
+        target, opinion, as_of = await naver.fetch_consensus("005930")
+        fwd_eps, prev_eps, est_year = await naver.fetch_estimate("005930")
+        print(f"목표주가 평균 {target:,.0f}원 · 투자의견 {opinion} ({as_of})")
+        print(f"{est_year} 추정 EPS {fwd_eps:,.0f} / 직전 실적 EPS {prev_eps:,.0f}")
+    finally:
+        await naver.close()
+
+asyncio.run(main())
+```
+
+```text
+목표주가 평균 458,182원 · 투자의견 4.0 (2026-11-24)
+2026 추정 EPS 45,515 / 직전 실적 EPS 6,564
+```
+
+</details>
+
+<details>
+<summary><b>발행주식수를 기준일·공시일과 함께 받기</b> (백테스트에서 미래 정보가 섞이지 않게)</summary>
+
+```python
+import asyncio, os
+from krx_fundamentals_client import DartScraper
+
+async def main():
+    dart = DartScraper(api_key=os.environ["DART_API_KEY"])
+    try:
+        s = await dart.fetch_shares_outstanding("005930", 2025)
+        print(f"{s.shares_outstanding:,}주 · 기준일 {s.stlm_dt} · 공시일 {s.knowledge_date}")
+    finally:
+        await dart.close()
+
+asyncio.run(main())
+```
+
+```text
+5,919,637,922주 · 기준일 2025-12-31 · 공시일 20260310
+```
+
+</details>
+
+OpenDART를 직접 부를 때, pykrx·FinanceDataReader를 쓸 때와 무엇이 다른지는 [docs/comparison.md](docs/comparison.md)에 실측과 함께 정리했습니다.
+
 ## 왜 이렇게 만들었나
 
 - **서버가 아닌 라이브러리:** FastAPI·캐시·스케줄러를 걷어내고 라이브러리로 바꿨습니다([kiwoom-client](https://github.com/younghwan91/kiwoom-client), [krx-news-client](https://github.com/younghwan91/krx-news-client)와 같은 구조입니다).
@@ -86,9 +239,18 @@ asyncio.run(main())
 | 문서 | 내용 |
 |---|---|
 | [docs/guide.md](docs/guide.md) | 배치 조회, 키 순환, 스크리닝·랭킹, 구조 다이어그램, 개발 명령 |
+| [docs/comparison.md](docs/comparison.md) | OpenDART 직접 호출·pykrx·FinanceDataReader와 비교 (2026-11 실측) |
 | [docs/architecture.md](docs/architecture.md) | 스크레이퍼 구조, 랭킹·스크리닝, DART 호출 순서 |
 | [docs/krx-blocked.md](docs/krx-blocked.md) | KRX 차단 코드 추적 |
 | [`examples/`](examples/) | 기본 사용·스크리닝·포트폴리오 예제 |
+
+## 같이 쓰면 좋은 것
+
+| 레포 | 한 줄 설명 |
+|---|---|
+| [fin-checkup](https://github.com/younghwan91/fin-checkup) | 같은 DART 재무제표를 지표 17개 신호등으로 읽어 주는 사이트입니다. 코드 없이 보고 싶을 때 [바로 열어 보세요](https://younghwan91.github.io/fin-checkup/). |
+| [krx-news-client](https://github.com/younghwan91/krx-news-client) | DART 공시와 토스증권 뉴스를 한 스키마로 받는 Python 클라이언트입니다. |
+| [kiwoom-client](https://github.com/younghwan91/kiwoom-client) | 키움 REST API 클라이언트입니다. 시세·주문은 여기서, 펀더멘탈은 이 라이브러리에서 받습니다. |
 
 ## 기여 및 문의
 
