@@ -13,6 +13,7 @@ Rules for writing code against this library:
 - **`KrxScraper` is blocked** (KRX requires login since 2026-08) and returns an empty list without raising. Never read an empty result as "no such stock"; use `NaverScraper` for per-stock ratios.
 - DART daily quota exhaustion raises `DartQuotaExceededError`, which is distinct from an empty result. Do not run bulk calls against a shared key without asking.
 - `screen_stocks` and `rank_stocks(RankingMetric)` take `list[InvestmentRatio]` and filter or sort in place; they do no I/O.
+- CLI (no key): `krx-fundamentals 삼성전자 000660 [--json]` prints a side-by-side ratio table; names are resolved with `NaverScraper().search(name)` -> `[(code, name, Market)]`.
 - Stock codes are 6 characters (`005930`). Models are plain Pydantic: `Company`, `FinancialStatement`, `InvestmentRatio`, `Dividend`, `SharesOutstanding`, `Shareholder`, `Executive`.
 
 ## Docs
