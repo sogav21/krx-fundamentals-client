@@ -19,7 +19,33 @@ Install with one pip line; no server, cache or scheduler — each call queries t
 
 </div>
 
-Three lines, no API key: Samsung Electronics' PER, PBR, EPS, dividend yield and more.
+One terminal line, no install and no API key: compare Korean stocks side by side by name or 6-digit code.
+
+```bash
+uvx --from git+https://github.com/younghwan91/krx-fundamentals-client krx-fundamentals 삼성전자 SK하이닉스 현대차 KB금융
+```
+
+```text
+                     삼성전자       SK하이닉스           현대차           KB금융
+                       005930           000660           005380           105560
+────────────────────────────────────────────────────────────────────────────────
+시장                    KOSPI            KOSPI            KOSPI            KOSPI
+현재가              171,500원      1,055,000원        259,500원        145,500원
+시가총액      1,002조 6,368억    745조 6,730억     52조 7,996억     51조 6,071억
+PER                    5.39배           4.03배           9.07배           8.69배
+PBR                    1.85배           2.43배           0.58배           0.84배
+EPS                  31,809원        261,625원         28,621원         16,744원
+BPS                  92,903원        433,826원        443,872원        172,316원
+배당수익률              0.97%            0.28%            3.85%            3.00%
+외국인소진율           45.84%           49.25%           23.88%           78.10%
+52주 위치     ███░░░░░░░  26%  ██░░░░░░░░  21%  ░░░░░░░░░░   3%  ███░░░░░░░  34%
+
+출처: 네이버 증권 · 투자 판단의 근거가 아닌 참고용 수치입니다.
+```
+
+<sub>Real output from 2026-11-27 (labels are in Korean). Add <code>--json</code> for <code>InvestmentRatio</code> JSON. Without <a href="https://docs.astral.sh/uv/">uv</a>, <code>pip install</code> and run <code>krx-fundamentals 005930</code>.</sub>
+
+In code it's three lines:
 
 ```python
 # pip install git+https://github.com/younghwan91/krx-fundamentals-client

@@ -17,6 +17,10 @@ dependencies = [
     "pydantic>=2.0.0",
 ]
 
+[project.scripts]
+krx-fundamentals = "krx_fundamentals_client.cli:main"
+krx-fundamentals-client = "krx_fundamentals_client.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/younghwan91/krx-fundamentals-client"
 Documentation = "https://github.com/younghwan91/krx-fundamentals-client/blob/main/docs/guide.md"
