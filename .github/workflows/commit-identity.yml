@@ -11,6 +11,11 @@ name: Commit Identity Guard
 #
 # 허용 목록을 바꾸려면 ALLOWED_EMAILS를 수정하라.
 # dependabot[bot] 은 봇 신원이다 — 회사 주소가 아니라서 허용한다.
+#
+# 포크에서 온 PR(외부 기여자)은 허용 목록을 적용하지 않는다. 막으려는 사고는
+# "레포 주인 이름으로 회사 주소가 찍히는 것"이라, 외부 기여자의 이메일은 그와
+# 무관하다. 2026-11-27 첫 외부 PR(#17)이 이 검사에 막혔다. 포크 PR에서도
+# 주인 이름(OWNER_NAME)으로 찍힌 커밋은 그대로 허용 목록과 대조한다.
 
 on:
   push:
@@ -42,6 +47,8 @@ jobs:
             48156556+younghwan91@users.noreply.github.com
             noreply@github.com
             49699333+dependabot[bot]@users.noreply.github.com
+          OWNER_NAME: Younghwan Chae
+          FROM_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           set -euo pipefail
 
@@ -77,15 +84,19 @@ jobs:
           echo
 
           BAD=0
-          while IFS='|' read -r sha author committer subject; do
+          while IFS='|' read -r sha aname author cname committer subject; do
             [ -z "$sha" ] && continue
-            for email in "$author" "$committer"; do
+            for pair in "$aname|$author" "$cname|$committer"; do
+              name="${pair%%|*}"; email="${pair#*|}"
+              if [ "$FROM_FORK" = "true" ] && [ "$name" != "$OWNER_NAME" ]; then
+                continue  # 외부 기여자 신원 — 이 검사의 대상이 아니다
+              fi
               if ! echo "$ALLOWED" | grep -Fxq "$email"; then
                 echo "::error::${sha:0:8} 허용되지 않은 이메일: $email  ($subject)"
                 BAD=1
               fi
             done
-          done < <(git log --format='%H|%ae|%ce|%s' "$RANGE" 2>/dev/null || true)
+          done < <(git log --format='%H|%an|%ae|%cn|%ce|%s' "$RANGE" 2>/dev/null || true)
 
           if [ "$BAD" -eq 1 ]; then
             echo
