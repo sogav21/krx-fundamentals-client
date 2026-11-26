@@ -178,6 +178,26 @@ class NaverScraper(BaseScraper):
             )
             return None
 
+    async def search(self, query: str) -> list[tuple[str, str, Market | None]]:
+        """종목명(또는 일부)으로 국내 종목을 찾아 ``(종목코드, 종목명, 시장)`` 목록을 돌려준다.
+
+        네이버 증권 자동완성(``ac.stock.naver.com``)을 쓴다. 해외 종목은 뺀다.
+        요청이 실패하면 빈 리스트.
+        """
+        try:
+            resp = await self.fetch(
+                "https://ac.stock.naver.com/ac", params={"q": query, "target": "stock"}
+            )
+            items = resp.json().get("items") or []
+        except Exception:
+            logger.warning("[%s] Failed to search %r", self.source, query)
+            return []
+        return [
+            (it["code"], it.get("name") or "", _detect_market(it.get("typeCode")))
+            for it in items
+            if it.get("code") and it.get("nationCode", "KOR") == "KOR"
+        ]
+
     async def fetch_batch(
         self, tickers: list[str]
     ) -> list[InvestmentRatio]:
